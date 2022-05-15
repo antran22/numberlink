@@ -1,7 +1,9 @@
 import re
+from time import time
 from turtle import width
 from puzzle import NumberlinkPuzzle
 import pycosat
+import pygame
 
 def solve(puzzle: NumberlinkPuzzle):
     """
@@ -13,47 +15,65 @@ def solve(puzzle: NumberlinkPuzzle):
     
     # Initialize model. Keep track of literals in the bool_vars dictionary.
     cnf = puzzle.generate_cnf()
+    t1 = time()
     result = pycosat.solve(cnf)
+    t2 = time()
 
     if result == "UNSAT":
         print("Cannot solve")
         return
-    assignments = []
 
+    def find_cell(j, i):
+        for k in puzzle.number_range():
+            if puzzle.number_var(k, i, j) in result:
+                return k
 
-    result_map = parse_result(result)
+    img = []
+    for i in range(puzzle.height):
+        row = []
+        for j in range(puzzle.width):
+            row.append(find_cell(i, j))
+        img.append(row)
+        print(row)
 
-    numbers = sorted([key for key in puzzle.var_map if key[0] == 'n' and result_map[puzzle.var_map[key]] > 0])
-
-    output_table = [[" " for i in range(puzzle.width)] for j in range(puzzle.height)]
-
-    for number in numbers:
-        x, y, col = number.split('.')[1:]
-        
-        x = int(x)
-        y = int(y)
-
-
-        v_var = puzzle.vertical_line_var(x, y)
-        h_var = puzzle.horizontal_line_var(x, y)
-        
-
-        if result_map[v_var] > 0:
-            output_table[y][x] = "↓"
-
-        if result_map[h_var] > 0:
-            output_table[y][x] = "→"
+    s = set()
+    for a in cnf:
+        for b in a:
+            s.add(abs(b))
     
-    for i, (x, y) in enumerate(puzzle.number_coordinates):
-        output_table[y][x] = i // 2 + 1
-        
-    for line in output_table:
-        for char in line:
-            print (char, end=" ")
-        print("\n")
-        
+    print('time: ', t2-t1, 's', sep='')
+    print('variables:', len(s))
+    print('clauses:', len(cnf))
+
+    cell_size = 50
+    cell_color = int(255/(puzzle.number_count-1))
+    pygame.init()
+    display = pygame.display.set_mode((puzzle.height*cell_size, puzzle.width*cell_size))
+
+    for y in range(puzzle.height):
+        for x in range(puzzle.width):
+            pygame.draw.rect(display, 
+                (cell_color * (img[y][x]-1), cell_color * (img[y][x]-1), cell_color * (img[y][x]-1)), 
+                [x*cell_size, y*cell_size, cell_size, cell_size])
+    
+    for y in range(puzzle.height):
+        for x in range(puzzle.width):
+            if puzzle.horizontal_line_var(x, y) in result:
+                pygame.draw.line(display,
+                (255, 0, 0),
+                (x*cell_size + cell_size/2, y*cell_size + cell_size/2),
+                ((x+1)*cell_size + cell_size/2, y*cell_size + cell_size/2),
+                3)
+            if puzzle.vertical_line_var(x, y) in result:
+                pygame.draw.line(display,
+                (255, 0, 0),
+                (x*cell_size + cell_size/2, y*cell_size + cell_size/2),
+                (x*cell_size + cell_size/2, (y+1)*cell_size + cell_size/2),
+                3)
 
 
-def parse_result(result):
-    return {abs(var): var for var in result}
+    pygame.display.flip()
+
+    while True:
+        continue
      
