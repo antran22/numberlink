@@ -15,15 +15,17 @@ def solve(puzzle: NumberlinkPuzzle):
     
     # Initialize model. Keep track of literals in the bool_vars dictionary.
     cnf = puzzle.generate_cnf()
-    t1 = time()
     result = 0
+    t = 0
 
     n = 0
     while n < 1000:
         n += 1
-        print(n)
 
+        t1 = time()
         result = pycosat.solve(cnf)
+        t2 = time()
+        t = t + t2 - t1
 
         # return if can't solve
         if result == "UNSAT":
@@ -33,7 +35,6 @@ def solve(puzzle: NumberlinkPuzzle):
         if not puzzle.has_circle(cnf, result):
             break
 
-    t2 = time()
 
 
     def find_cell(j, i):
@@ -54,9 +55,10 @@ def solve(puzzle: NumberlinkPuzzle):
         for num in clause:
             s.add(abs(num))
 
+    print(n)
     print('size:', (puzzle.width, puzzle.height))
     print('numbers:', puzzle.number_count)
-    print('time: ', t2-t1, 's', sep='')
+    print('time: ', t, 's', sep='')
     print('variables:', len(s))
     print('clauses:', len(cnf))
 
