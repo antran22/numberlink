@@ -125,7 +125,6 @@ class NumberlinkPuzzle:
                             if var in result and var != last_var:
                                 if var in lined:
                                     cnf.append(negative_cnf(lined))
-                                    print(lined)
                                     ret = True
                                     break
                                 lined.add(var)
