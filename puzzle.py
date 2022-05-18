@@ -21,6 +21,7 @@ class NumberlinkPuzzle:
         self.number_coordinates = number_coordinates
         self.area = width * height
         self.generate_var_map()
+        self.graph = self.generate_graph()
 
     def generate_cnf(self):
         cnf_clauses = []
@@ -100,6 +101,58 @@ class NumberlinkPuzzle:
                 cnf_clauses.append([-self.vertical_line_var(x, y), *double])
 
         return cnf_clauses
+
+    # check circle and add cnf
+    def has_circle(self, cnf, result):
+        ret = False
+        passed = []
+        
+        lined = set()
+        coorded = set()
+        queue = []
+        for y in range(self.height):
+            for x in range(self.width):
+                if (x, y) not in passed:
+                    lined.clear()
+                    coorded.clear()
+                    queue.clear()
+                    coorded.add((x, y))
+                    queue.append((x, y))
+                    last_var = 0
+                    while len(queue) > 0:
+                        xx, yy = queue.pop()
+                        for var, coord in self.graph[yy][xx]:
+                            if var in result and var != last_var:
+                                if var in lined:
+                                    cnf.append(negative_cnf(lined))
+                                    print(lined)
+                                    ret = True
+                                    break
+                                lined.add(var)
+                                coorded.add(coord)
+                                queue.append(coord)
+                                last_var = var
+                                break
+                    passed.extend(coorded)
+        return ret
+
+    def generate_graph(self):
+        graph = []
+        for y in range(self.height):
+            row = []
+            for x in range(self.width):
+                cell = []
+                if x != self.width - 1:
+                    cell.append([self.horizontal_line_var(x, y), (x+1, y)])
+                if y != self.height - 1:
+                    cell.append([self.vertical_line_var(x, y), (x, y+1)])
+                if x != 0:
+                    cell.append([self.horizontal_line_var(x - 1, y), (x-1, y)])
+                if y != 0:
+                    cell.append([self.vertical_line_var(x, y - 1), (x, y-1)])
+                row.append(cell)
+            graph.append(row)
+        return graph
 
     def coordinate_for_number(self, number: int) -> Tuple[Coordinate, Coordinate]:
         return (self.number_coordinates[number * 2 - 2], self.number_coordinates[number * 2 - 1])

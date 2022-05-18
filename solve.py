@@ -16,12 +16,25 @@ def solve(puzzle: NumberlinkPuzzle):
     # Initialize model. Keep track of literals in the bool_vars dictionary.
     cnf = puzzle.generate_cnf()
     t1 = time()
-    result = pycosat.solve(cnf)
+    result = 0
+
+    n = 0
+    while n < 1000:
+        n += 1
+        print(n)
+
+        result = pycosat.solve(cnf)
+
+        # return if can't solve
+        if result == "UNSAT":
+            print("Cannot solve")
+            return
+
+        if not puzzle.has_circle(cnf, result):
+            break
+
     t2 = time()
 
-    if result == "UNSAT":
-        print("Cannot solve")
-        return
 
     def find_cell(j, i):
         for k in puzzle.number_range():
@@ -34,19 +47,23 @@ def solve(puzzle: NumberlinkPuzzle):
         for j in range(puzzle.width):
             row.append(find_cell(i, j))
         img.append(row)
-        print(row)
 
+    # get set of variables
     s = set()
-    for a in cnf:
-        for b in a:
-            s.add(abs(b))
-    
+    for clause in cnf:
+        for num in clause:
+            s.add(abs(num))
+
+    print('size:', (puzzle.width, puzzle.height))
+    print('numbers:', puzzle.number_count)
     print('time: ', t2-t1, 's', sep='')
     print('variables:', len(s))
     print('clauses:', len(cnf))
 
-    cell_size = 50
-    cell_color = int(255/(puzzle.number_count-1))
+
+    # Show board by pygame
+    cell_size = 25
+    cell_color = int(255/(puzzle.number_count))
     pygame.init()
     display = pygame.display.set_mode((puzzle.height*cell_size, puzzle.width*cell_size))
 
@@ -70,7 +87,6 @@ def solve(puzzle: NumberlinkPuzzle):
                 (x*cell_size + cell_size/2, y*cell_size + cell_size/2),
                 (x*cell_size + cell_size/2, (y+1)*cell_size + cell_size/2),
                 3)
-
 
     pygame.display.flip()
 
