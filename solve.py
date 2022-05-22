@@ -1,41 +1,24 @@
 import re
 from time import time
-from turtle import width
 from puzzle import NumberlinkPuzzle
 import pycosat
 import pygame
 
 def solve(puzzle: NumberlinkPuzzle):
-    """
-    Finds truth value assignments for given cnf_clauses. Returns a list of all literals, which
-    are preceded by '-' if they are assigned a False value.
-    :param cnf_clauses:
-    :return: assignments array. None if the problem is not solvable.
-    """
-    
-    # Initialize model. Keep track of literals in the bool_vars dictionary.
     cnf = puzzle.generate_cnf()
     result = 0
     t = 0
 
     n = 0
-    while n < 1000:
-        n += 1
-
-        t1 = time()
-        result = pycosat.solve(cnf)
-        t2 = time()
-        t = t + t2 - t1
-
-        # return if can't solve
+    start_time = time()
+    for result in pycosat.itersolve(cnf):
         if result == "UNSAT":
             print("Cannot solve")
             return
 
         if not puzzle.has_circle(cnf, result):
             break
-
-
+    end_time = time()
 
     def find_cell(j, i):
         for k in puzzle.number_range():
@@ -49,18 +32,11 @@ def solve(puzzle: NumberlinkPuzzle):
             row.append(find_cell(i, j))
         img.append(row)
 
-    # get set of variables
-    s = set()
-    for clause in cnf:
-        for num in clause:
-            s.add(abs(num))
-
-    print(n)
-    print('size:', (puzzle.width, puzzle.height))
+    print('puzzle size:', (puzzle.width, puzzle.height))
     print('numbers:', puzzle.number_count)
-    print('time: ', t, 's', sep='')
-    print('variables:', len(s))
-    print('clauses:', len(cnf))
+    print('time: ', end_time - start_time, 's', sep='')
+    print('number of variables:', len(puzzle.var_map))
+    print('number of clauses:', len(cnf))
 
 
     # Show board by pygame
