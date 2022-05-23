@@ -5,18 +5,16 @@ import pycosat
 import pygame
 
 def solve(puzzle: NumberlinkPuzzle):
+
     cnf = puzzle.generate_cnf()
     result = 0
-    t = 0
-
-    n = 0
     start_time = time()
     for result in pycosat.itersolve(cnf):
         if result == "UNSAT":
             print("Cannot solve")
             return
 
-        if not puzzle.has_circle(cnf, result):
+        if not puzzle.has_circle(result):
             break
     end_time = time()
 
@@ -44,6 +42,7 @@ def solve(puzzle: NumberlinkPuzzle):
     cell_color = int(255/(puzzle.number_count))
     pygame.init()
     display = pygame.display.set_mode((puzzle.height*cell_size, puzzle.width*cell_size))
+    font = pygame.font.SysFont('Comic Sans MS', 20)
 
     for y in range(puzzle.height):
         for x in range(puzzle.width):
@@ -65,6 +64,12 @@ def solve(puzzle: NumberlinkPuzzle):
                 (x*cell_size + cell_size/2, y*cell_size + cell_size/2),
                 (x*cell_size + cell_size/2, (y+1)*cell_size + cell_size/2),
                 3)
+
+            possible_number = puzzle.number_at_coordinate(x, y)
+            if possible_number is not None:
+               text_surface = font.render(f"{possible_number}", False, (0, 255, 0)) 
+               display.blit(text_surface, (x*cell_size + cell_size/2 - 5, y*cell_size + cell_size/2 - 10))
+            
 
     pygame.display.flip()
 

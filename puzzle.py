@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 from itertools import product, combinations
 from math import comb
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 Coordinate = Tuple[int, int]
-
 
 
 class NumberlinkPuzzle:
@@ -17,7 +16,7 @@ class NumberlinkPuzzle:
     def __init__(self, width: int, height: int, number_coordinates: List[Coordinate]):
         self.width = width
         self.height = height
-        self.number_count = len(number_coordinates) // 2  
+        self.number_count = len(number_coordinates) // 2
         self.number_coordinates = number_coordinates
         self.area = width * height
         self.generate_var_map()
@@ -103,16 +102,15 @@ class NumberlinkPuzzle:
         return cnf_clauses
 
     # check circle and add cnf
-    def has_circle(self, cnf, result):
-        ret = False
-        passed = []
-        
+    def has_circle(self, result):
+        visited = []
+
         lined = set()
         coorded = set()
         queue = []
         for y in range(self.height):
             for x in range(self.width):
-                if (x, y) not in passed:
+                if (x, y) not in visited:
                     lined.clear()
                     coorded.clear()
                     queue.clear()
@@ -124,16 +122,14 @@ class NumberlinkPuzzle:
                         for var, coord in self.graph[yy][xx]:
                             if var in result and var != last_var:
                                 if var in lined:
-                                    cnf.append(negative_cnf(lined))
-                                    ret = True
-                                    break
+                                    return False
                                 lined.add(var)
                                 coorded.add(coord)
                                 queue.append(coord)
                                 last_var = var
                                 break
-                    passed.extend(coorded)
-        return ret
+                    visited.extend(coorded)
+        return True
 
     def generate_graph(self):
         graph = []
@@ -142,19 +138,28 @@ class NumberlinkPuzzle:
             for x in range(self.width):
                 cell = []
                 if x != self.width - 1:
-                    cell.append([self.horizontal_line_var(x, y), (x+1, y)])
+                    cell.append([self.horizontal_line_var(x, y), (x + 1, y)])
                 if y != self.height - 1:
-                    cell.append([self.vertical_line_var(x, y), (x, y+1)])
+                    cell.append([self.vertical_line_var(x, y), (x, y + 1)])
                 if x != 0:
-                    cell.append([self.horizontal_line_var(x - 1, y), (x-1, y)])
+                    cell.append([self.horizontal_line_var(x - 1, y), (x - 1, y)])
                 if y != 0:
-                    cell.append([self.vertical_line_var(x, y - 1), (x, y-1)])
+                    cell.append([self.vertical_line_var(x, y - 1), (x, y - 1)])
                 row.append(cell)
             graph.append(row)
         return graph
 
     def coordinate_for_number(self, number: int) -> Tuple[Coordinate, Coordinate]:
-        return (self.number_coordinates[number * 2 - 2], self.number_coordinates[number * 2 - 1])
+        return (
+            self.number_coordinates[number * 2 - 2],
+            self.number_coordinates[number * 2 - 1],
+        )
+
+    def number_at_coordinate(self, x: int, y: int) -> Optional[int]:
+        if (x, y) not in self.number_coordinates:
+            return None
+        idx = self.number_coordinates.index((x, y))
+        return idx // 2 + 1
 
     def horizontal_line_var(self, x: int, y: int) -> int:
         return self.var_map[f"h.{x}.{y}"]
@@ -185,7 +190,7 @@ class NumberlinkPuzzle:
                     n = f"n.{x}.{y}.{number}"
                     self.var_map[n] = len(self.var_array)
                     self.var_array.append(n)
-                    
+
 
 def positive_cnf(elements: Iterable[int]) -> List[int]:
     return list(elements)
@@ -193,4 +198,3 @@ def positive_cnf(elements: Iterable[int]) -> List[int]:
 
 def negative_cnf(elements: Iterable[int]) -> List[int]:
     return [-e for e in elements]
-
