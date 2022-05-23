@@ -7,11 +7,6 @@ Coordinate = Tuple[int, int]
 
 
 class NumberlinkPuzzle:
-    """
-    A Numberlink puzzle class that takes the puzzle width, height, and the locations of the colors
-    (numbers) at initialization. Contains a conjunctive normal form (CNF) generator and solver
-    methods.
-    """
 
     def __init__(self, width: int, height: int, number_coordinates: List[Coordinate]):
         self.width = width
@@ -28,7 +23,6 @@ class NumberlinkPuzzle:
             for x in range(self.width):
                 cnf_clauses.extend(self.cnf_for_cell(x, y))
 
-        # Add respective numbers to given color locations.
         for i in self.number_range():
             coord_1, coord_2 = self.coordinate_for_number(i)
 
@@ -42,7 +36,6 @@ class NumberlinkPuzzle:
         cnf_clauses = []
         lines: List[int] = []
 
-        # All vertical and horizontal lines attached to current cell.
         if x != self.width - 1:
             lines.append(self.horizontal_line_var(x, y))
         if y != self.height - 1:
@@ -52,36 +45,28 @@ class NumberlinkPuzzle:
         if y != 0:
             lines.append(self.vertical_line_var(x, y - 1))
 
-        # Every color cell has only 1 line going in/out, every non-color cell
-        # has 2 lines going in/out. Denoting corresponding logic in CNF.
-        # (1 or 2 True out of 2, 3 or 4 literals).
         if (x, y) in self.number_coordinates:
             for combination in combinations(lines, 2):
                 cnf_clauses.append(negative_cnf(combination))
             cnf_clauses.append(positive_cnf(lines))
         else:
-            # 2 true out of 2 lines.
             if len(lines) == 2:
                 for l in lines:
                     cnf_clauses.append([l])
-            # 2 true out of 3 lines.
             elif len(lines) == 3:
                 for combination in combinations(lines, 2):
                     cnf_clauses.append(positive_cnf(combination))
                 cnf_clauses.append(negative_cnf(lines))
-            # 2 true out of 4 lines.
             else:
                 for combination in combinations(lines, 3):
                     cnf_clauses.append(positive_cnf(combination))
                     cnf_clauses.append(negative_cnf(combination))
 
-        # Number variables for current cell. Only 1 is True.
         number_vars = [self.number_var(number, x, y) for number in self.number_range()]
         for combination in combinations(number_vars, 2):
             cnf_clauses.append(negative_cnf(combination))
         cnf_clauses.append(number_vars)
 
-        # Vertical/horizontal line implies color shared with adjacent cell.
         if self.horizontal_line_var(x, y) in lines:
             cur_numbers = [
                 (self.number_var(number, x, y), self.number_var(number, x + 1, y))
@@ -101,7 +86,6 @@ class NumberlinkPuzzle:
 
         return cnf_clauses
 
-    # check circle and add cnf
     def has_circle(self, result):
         visited = []
 
